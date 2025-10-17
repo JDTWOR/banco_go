@@ -191,89 +191,99 @@ func showTransferForm(w http.ResponseWriter, r *http.Request) {
 
 // Realiza la transferencia
 func transferMoney(w http.ResponseWriter, r *http.Request) {
-	log.Println("transferMoney called")
-	if r.Method == "POST" {
-		log.Println("Method is POST")
-		idEmisor := r.FormValue("id_emisor")
-		idReceptor := r.FormValue("id_receptor")
-		valor := r.FormValue("valor")
-		log.Printf("Form values: idEmisor=%s, idReceptor=%s, valor=%s", idEmisor, idReceptor, valor)
+    log.Println("transferMoney called")
+    if r.Method != "POST" {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        fmt.Fprintf(w, `{"error": "Método no permitido"}`)
+        return
+    }
 
-		// Verificar que el emisor tenga saldo suficiente
-		var saldoEmisor float64
-		err := db.QueryRow("SELECT saldo FROM users WHERE id = ?", idEmisor).Scan(&saldoEmisor)
-		if err != nil {
-			log.Printf("Error checking sender balance: %v", err)
-			http.Error(w, "Emisor no encontrado", http.StatusBadRequest)
-			return
-		}
+    idEmisor := r.FormValue("id_emisor")
+    idReceptor := r.FormValue("id_receptor")
+    valor := r.FormValue("valor")
 
-		valorFloat := 0.0
-		fmt.Sscanf(valor, "%f", &valorFloat)
+    // Verificar que el emisor tenga saldo suficiente
+    var saldoEmisor float64
+    err := db.QueryRow("SELECT saldo FROM users WHERE id = ?", idEmisor).Scan(&saldoEmisor)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintf(w, `{"error": "Emisor no encontrado"}`)
+        return
+    }
 
-		if saldoEmisor < valorFloat {
-			log.Println("Insufficient balance")
-			http.Error(w, "Saldo insuficiente", http.StatusBadRequest)
-			return
-		}
+    valorFloat := 0.0
+    fmt.Sscanf(valor, "%f", &valorFloat)
 
-		// Verificar que el receptor exista
-		var count int
-		err = db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", idReceptor).Scan(&count)
-		if err != nil || count == 0 {
-			log.Printf("Error checking receiver: %v", err)
-			http.Error(w, "Receptor no encontrado", http.StatusBadRequest)
-			return
-		}
+    if saldoEmisor < valorFloat {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintf(w, `{"error": "Saldo insuficiente"}`)
+        return
+    }
 
-		// Iniciar transacción
-		tx, err := db.Begin()
-		if err != nil {
-			log.Printf("Error starting transaction: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer tx.Rollback()
+    // Verificar que el receptor exista
+    var count int
+    err = db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", idReceptor).Scan(&count)
+    if err != nil || count == 0 {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintf(w, `{"error": "Receptor no encontrado"}`)
+        return
+    }
 
-		// Descontar del emisor
-		_, err = tx.Exec("UPDATE users SET saldo = saldo - ? WHERE id = ?", valorFloat, idEmisor)
-		if err != nil {
-			log.Printf("Error updating sender balance: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    // Iniciar transacción
+    tx, err := db.Begin()
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, `{"error": "Error al iniciar la transferencia"}`)
+        return
+    }
+    defer tx.Rollback()
 
-		// Sumar al receptor
-		_, err = tx.Exec("UPDATE users SET saldo = saldo + ? WHERE id = ?", valorFloat, idReceptor)
-		if err != nil {
-			log.Printf("Error updating receiver balance: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    // Descontar del emisor
+    _, err = tx.Exec("UPDATE users SET saldo = saldo - ? WHERE id = ?", valorFloat, idEmisor)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, `{"error": "Error al actualizar saldo del emisor"}`)
+        return
+    }
 
-		// Insertar la transferencia
-		_, err = tx.Exec("INSERT INTO transferencias (id_emisor, id_receptor, valor) VALUES (?, ?, ?)", idEmisor, idReceptor, valorFloat)
-		if err != nil {
-			log.Printf("Error inserting transfer: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    // Sumar al receptor
+    _, err = tx.Exec("UPDATE users SET saldo = saldo + ? WHERE id = ?", valorFloat, idReceptor)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, `{"error": "Error al actualizar saldo del receptor"}`)
+        return
+    }
 
-		// Confirmar transacción
-		err = tx.Commit()
-		if err != nil {
-			log.Printf("Error committing transaction: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+    // Insertar la transferencia
+    _, err = tx.Exec("INSERT INTO transferencias (id_emisor, id_receptor, valor) VALUES (?, ?, ?)", 
+        idEmisor, idReceptor, valorFloat)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, `{"error": "Error al registrar la transferencia"}`)
+        return
+    }
 
-		log.Println("Transfer completed successfully")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	} else {
-		log.Println("Method is not POST")
-	}
+    // Confirmar transacción
+    if err = tx.Commit(); err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintf(w, `{"error": "Error al realizar la transferencia"}`)
+        return
+    }
+
+    // Enviar respuesta de éxito
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, `{"message": "Transferencia realizada con éxito"}`)
 }
-
 // Muestra todas las transferencias
 func showTransfers(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT id, id_emisor, id_receptor, valor, created_at FROM transferencias ORDER BY created_at DESC")
