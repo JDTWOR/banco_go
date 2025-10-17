@@ -1,11 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Usuarios en Go</title>
 </head>
 <body>
-    
+    <h1>Lista de Usuarios</h1>
+
+    <form action="/add" method="post">
+        <input type="text" name="name" placeholder="Nombre" required>
+        <input type="email" name="email" placeholder="Correo" required>
+        <button type="submit">Agregar</button>
+    </form>
+
+    <h2>Usuarios registrados:</h2>
+    <ul>
+        {{range .}}
+            <li>{{.ID}} - {{.Name}} ({{.Email}})</li>
+        {{else}}
+            <li>No hay usuarios aún.</li>
+        {{end}}
+    </ul>
 </body>
 </html>
