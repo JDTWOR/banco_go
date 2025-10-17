@@ -29,11 +29,11 @@ type PageData struct {
 
 // Estructura de la transferencia
 type Transferencia struct {
-	ID         int
-	IDEmisor   int
-	IDReceptor int
-	Valor      float64
-	CreatedAt  string
+	ID           int
+	EmisorName   string
+	ReceptorName string
+	Valor        float64
+	CreatedAt    string
 }
 
 // Variable global para la conexión
@@ -276,7 +276,13 @@ func transferMoney(w http.ResponseWriter, r *http.Request) {
 
 // Muestra todas las transferencias
 func showTransfers(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, id_emisor, id_receptor, valor, created_at FROM transferencias ORDER BY created_at DESC")
+	rows, err := db.Query(`
+		SELECT t.id, u1.name AS emisor_name, u2.name AS receptor_name, t.valor, t.created_at
+		FROM transferencias t
+		JOIN users u1 ON t.id_emisor = u1.id
+		JOIN users u2 ON t.id_receptor = u2.id
+		ORDER BY t.created_at DESC
+	`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -286,7 +292,7 @@ func showTransfers(w http.ResponseWriter, r *http.Request) {
 	var transferencias []Transferencia
 	for rows.Next() {
 		var t Transferencia
-		rows.Scan(&t.ID, &t.IDEmisor, &t.IDReceptor, &t.Valor, &t.CreatedAt)
+		rows.Scan(&t.ID, &t.EmisorName, &t.ReceptorName, &t.Valor, &t.CreatedAt)
 		transferencias = append(transferencias, t)
 	}
 
