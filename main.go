@@ -199,15 +199,75 @@ func transferMoney(w http.ResponseWriter, r *http.Request) {
 		valor := r.FormValue("valor")
 		log.Printf("Form values: idEmisor=%s, idReceptor=%s, valor=%s", idEmisor, idReceptor, valor)
 
-		// Insertar la transferencia en la base de datos
-		_, err := db.Exec("INSERT INTO transferencias (id_emisor, id_receptor, valor) VALUES (?, ?, ?)", idEmisor, idReceptor, valor)
+		// Verificar que el emisor tenga saldo suficiente
+		var saldoEmisor float64
+		err := db.QueryRow("SELECT saldo FROM users WHERE id = ?", idEmisor).Scan(&saldoEmisor)
 		if err != nil {
-			log.Printf("Database error: %v", err)
+			log.Printf("Error checking sender balance: %v", err)
+			http.Error(w, "Emisor no encontrado", http.StatusBadRequest)
+			return
+		}
+
+		valorFloat := 0.0
+		fmt.Sscanf(valor, "%f", &valorFloat)
+
+		if saldoEmisor < valorFloat {
+			log.Println("Insufficient balance")
+			http.Error(w, "Saldo insuficiente", http.StatusBadRequest)
+			return
+		}
+
+		// Verificar que el receptor exista
+		var count int
+		err = db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", idReceptor).Scan(&count)
+		if err != nil || count == 0 {
+			log.Printf("Error checking receiver: %v", err)
+			http.Error(w, "Receptor no encontrado", http.StatusBadRequest)
+			return
+		}
+
+		// Iniciar transacción
+		tx, err := db.Begin()
+		if err != nil {
+			log.Printf("Error starting transaction: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Println("Transfer inserted successfully")
+		defer tx.Rollback()
 
+		// Descontar del emisor
+		_, err = tx.Exec("UPDATE users SET saldo = saldo - ? WHERE id = ?", valorFloat, idEmisor)
+		if err != nil {
+			log.Printf("Error updating sender balance: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Sumar al receptor
+		_, err = tx.Exec("UPDATE users SET saldo = saldo + ? WHERE id = ?", valorFloat, idReceptor)
+		if err != nil {
+			log.Printf("Error updating receiver balance: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Insertar la transferencia
+		_, err = tx.Exec("INSERT INTO transferencias (id_emisor, id_receptor, valor) VALUES (?, ?, ?)", idEmisor, idReceptor, valorFloat)
+		if err != nil {
+			log.Printf("Error inserting transfer: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Confirmar transacción
+		err = tx.Commit()
+		if err != nil {
+			log.Printf("Error committing transaction: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Println("Transfer completed successfully")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	} else {
 		log.Println("Method is not POST")
