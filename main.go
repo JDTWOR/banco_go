@@ -172,7 +172,23 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		id := r.URL.Query().Get("id")
 
-		_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
+		// Verificar si el usuario tiene transferencias
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM transferencias WHERE id_emisor = ? OR id_receptor = ?", id, id).Scan(&count)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if count > 0 {
+			// Usuario tiene historial de transferencias, no se puede eliminar
+			target := url.URL{Path: "/", RawQuery: url.Values{"error": {"1"}, "msg": {"Este usuario no se puede eliminar porque ya tiene un historial de transferencias"}}.Encode()}
+			http.Redirect(w, r, target.String(), http.StatusSeeOther)
+			return
+		}
+
+		// Proceder con la eliminación
+		_, err = db.Exec("DELETE FROM users WHERE id = ?", id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
