@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -190,6 +191,12 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 		// Proceder con la eliminación
 		_, err = db.Exec("DELETE FROM users WHERE id = ?", id)
 		if err != nil {
+			// Verificar si es un error de foreign key constraint
+			if strings.Contains(err.Error(), "foreign key constraint") || strings.Contains(err.Error(), "1451") {
+				target := url.URL{Path: "/", RawQuery: url.Values{"error": {"1"}, "msg": {"Este usuario no se puede eliminar porque ya tiene un historial de transferencias"}}.Encode()}
+				http.Redirect(w, r, target.String(), http.StatusSeeOther)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
