@@ -29,10 +29,17 @@
             <a href="/historial" class="btn btn-success">Historial de Transferencias</a>
         </div>
 
-        <!-- Mensaje de confirmación -->
-        {{if .Message}}
+        <!-- Mensaje de éxito -->
+        {{if .Success}}
         <div class="alert alert-success" role="alert">
-            {{.Message}}
+            {{.Success}}
+        </div>
+        {{end}}
+
+        <!-- Mensaje de error -->
+        {{if .Error}}
+        <div class="alert alert-danger" role="alert">
+            {{.Error}}
         </div>
         {{end}}
 
@@ -81,5 +88,13 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 3000);
+    </script>
 </body>
 </html>
