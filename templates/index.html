@@ -13,10 +13,22 @@
         <button type="submit">Agregar</button>
     </form>
 
+    <br>
+    <a href="/transaccion">Transacción</a>
+
     <h2>Usuarios registrados:</h2>
     <ul>
         {{range .}}
-            <li>{{.ID}} - {{.Name}} ({{.Email}})</li>
+            <li>
+                {{.ID}} - {{.Name}} ({{.Email}})
+                <form action="/edit" method="post" style="display: inline;">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <input type="text" name="name" value="{{.Name}}" required>
+                    <input type="email" name="email" value="{{.Email}}" required>
+                    <button type="submit">Editar</button>
+                </form>
+                <a href="/delete?id={{.ID}}" onclick="return confirm('¿Estás seguro de eliminar este usuario?')">Eliminar</a>
+            </li>
         {{else}}
             <li>No hay usuarios aún.</li>
         {{end}}

@@ -33,6 +33,8 @@ func main() {
 	// Rutas
 	http.HandleFunc("/", showUsers)
 	http.HandleFunc("/add", addUser)
+	http.HandleFunc("/edit", editUser)
+	http.HandleFunc("/delete", deleteUser)
 
 	fmt.Println("Servidor corriendo en http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
@@ -65,6 +67,38 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 
 		_, err := db.Exec("INSERT INTO users (name, email) VALUES (?, ?)", name, email)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+// Edita un usuario existente
+func editUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		id := r.FormValue("id")
+		name := r.FormValue("name")
+		email := r.FormValue("email")
+
+		_, err := db.Exec("UPDATE users SET name = ?, email = ? WHERE id = ?", name, email, id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+// Elimina un usuario
+func deleteUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		id := r.URL.Query().Get("id")
+
+		_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
