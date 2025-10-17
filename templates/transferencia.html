@@ -63,50 +63,25 @@
         }
     </style>
 </head>
-        <script>
-        function realizarTransferencia(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            
-            fetch('/transfer', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.error);
-                    });
-                }
-                alert('Transferencia realizada con éxito');
-                window.location.href = '/';
-                return response.json();
-            })
-            .catch(error => {
-                alert(error.message || 'Error al realizar la transferencia');
-            });
-        }
-    </script>
 <body>
-        <h2>Realizar Transferencia</h2>
-            <form onsubmit="realizarTransferencia(event)">
-                <div>
-                    <label>ID Emisor:</label>
-                    <input type="number" name="id_emisor" required>
-                </div>
-                <div>
-                    <label>ID Receptor:</label>
-                    <input type="number" name="id_receptor" required>
-                </div>
-                <div>
-                    <label>Valor:</label>
-                    <input type="number" step="0.01" name="valor" required>
-                </div>
-                <button type="submit">Transferir</button>
-            </form>
-            <p><a href="/">Volver al inicio</a></p>
-
-
+    <h1>Realizar Transferencia</h1>
+    <form action="/transfer" method="post">
+        <label for="id_emisor">Emisor:</label>
+        <select id="id_emisor" name="id_emisor" required>
+            {{range .Users}}
+            <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}
+        </select><br><br>
+        <label for="id_receptor">Receptor:</label>
+        <select id="id_receptor" name="id_receptor" required>
+            {{range .Users}}
+            <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}
+        </select><br><br>
+        <label for="valor">Valor:</label>
+        <input type="number" step="0.01" id="valor" name="valor" required><br><br>
+        <button type="submit">Transferir</button>
+        <a href="/" class="btn btn-secondary">Volver al Inicio</a>
+    </form>
 </body>
 </html>
