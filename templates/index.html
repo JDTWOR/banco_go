@@ -3,23 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>Usuarios en Go</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Lista de Usuarios</h1>
+    <div class="container mt-5">
+        <h1>Lista de Usuarios</h1>
 
-    <form action="/add" method="post">
-        <input type="text" name="name" placeholder="Nombre" required>
-        <input type="email" name="email" placeholder="Correo" required>
-        <button type="submit">Agregar</button>
-    </form>
+        <form action="/add" method="post" class="mb-3">
+            <div class="row g-2">
+                <div class="col-md">
+                    <input type="text" name="name" placeholder="Nombre" class="form-control" required>
+                </div>
+                <div class="col-md">
+                    <input type="email" name="email" placeholder="Correo" class="form-control" required>
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </div>
+        </form>
 
-    <h2>Usuarios registrados:</h2>
-    <ul>
-        {{range .}}
-            <li>{{.ID}} - {{.Name}} ({{.Email}})</li>
-        {{else}}
-            <li>No hay usuarios aún.</li>
-        {{end}}
-    </ul>
+        <a href="/transaccion" class="btn btn-success mb-3">Transacción</a>
+
+        <h2>Usuarios registrados:</h2>
+        <ul class="list-group">
+            {{range .}}
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            {{.ID}} - {{.Name}} ({{.Email}})
+                        </div>
+                        <div class="col-auto">
+                            <form action="/edit" method="post" class="d-inline me-2">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <input type="text" name="name" value="{{.Name}}" class="form-control form-control-sm d-inline w-auto" required>
+                                <input type="email" name="email" value="{{.Email}}" class="form-control form-control-sm d-inline w-auto" required>
+                                <button type="submit" class="btn btn-warning btn-sm">Editar</button>
+                            </form>
+                            <a href="/delete?id={{.ID}}" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de eliminar este usuario?')">Eliminar</a>
+                        </div>
+                    </div>
+                </li>
+            {{else}}
+                <li class="list-group-item">No hay usuarios aún.</li>
+            {{end}}
+        </ul>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
