@@ -15,6 +15,7 @@ type User struct {
 	ID    int
 	Name  string
 	Email string
+	Saldo float64
 }
 
 // Variable global para la conexión
@@ -24,7 +25,7 @@ func main() {
 	var err error
 	// Conexión a la base de datos
 	// usuario:contraseña@tcp(host:puerto)/base_de_datos
-	db, err = sql.Open("mysql", "root:1234@tcp(127.0.0.1:3306)/banco_go")
+	db, err = sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/banco_go")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,7 +45,7 @@ func main() {
 
 // Muestra los usuarios registrados
 func showUsers(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name, email FROM users")
+	rows, err := db.Query("SELECT id, name, email, saldo FROM users")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,7 +55,7 @@ func showUsers(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	for rows.Next() {
 		var u User
-		rows.Scan(&u.ID, &u.Name, &u.Email)
+		rows.Scan(&u.ID, &u.Name, &u.Email, &u.Saldo)
 		users = append(users, u)
 	}
 
