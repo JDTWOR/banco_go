@@ -43,7 +43,7 @@ func main() {
 	var err error
 	// Conexión a la base de datos
 	// usuario:contraseña@tcp(host:puerto)/base_de_datos
-	db, err = sql.Open("mysql", "root:1234@tcp(127.0.0.1:3306)/banco_go")
+	db, err = sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/banco_go")
 	if err != nil {
 		log.Fatal(err)
 	}
