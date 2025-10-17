@@ -15,8 +15,8 @@
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>ID Emisor</th>
-                        <th>ID Receptor</th>
+                        <th>Emisor</th>
+                        <th>Receptor</th>
                         <th>Valor</th>
                         <th>Fecha</th>
                     </tr>
@@ -25,8 +25,8 @@
                     {{range .}}
                     <tr>
                         <td>{{.ID}}</td>
-                        <td>{{.IDEmisor}}</td>
-                        <td>{{.IDReceptor}}</td>
+                        <td>{{.EmisorName}}</td>
+                        <td>{{.ReceptorName}}</td>
                         <td>{{.Valor}}</td>
                         <td>{{.CreatedAt}}</td>
                     </tr>
