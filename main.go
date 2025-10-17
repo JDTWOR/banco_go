@@ -185,8 +185,27 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 // Muestra el formulario de transferencia
 func showTransferForm(w http.ResponseWriter, r *http.Request) {
 	log.Println("showTransferForm called")
-	tmpl, _ := template.ParseFiles("templates/transferencia.html")
-	tmpl.Execute(w, nil)
+	rows, err := db.Query("SELECT id, name FROM users")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		rows.Scan(&u.ID, &u.Name)
+		users = append(users, u)
+	}
+
+	data := PageData{Users: users}
+	tmpl, err := template.ParseFiles("templates/transferencia.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, data)
 }
 
 // Realiza la transferencia
