@@ -27,6 +27,15 @@ type PageData struct {
 	Message string
 }
 
+// Estructura de la transferencia
+type Transferencia struct {
+	ID         int
+	IDEmisor   int
+	IDReceptor int
+	Valor      float64
+	CreatedAt  string
+}
+
 // Variable global para la conexión
 var db *sql.DB
 
@@ -47,6 +56,7 @@ func main() {
 	http.HandleFunc("/delete", deleteUser)
 	http.HandleFunc("/transferencia", showTransferForm)
 	http.HandleFunc("/transfer", transferMoney)
+	http.HandleFunc("/historial", showTransfers)
 
 	fmt.Println("Servidor corriendo en http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
@@ -202,4 +212,24 @@ func transferMoney(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Println("Method is not POST")
 	}
+}
+
+// Muestra todas las transferencias
+func showTransfers(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT id, id_emisor, id_receptor, valor, created_at FROM transferencias ORDER BY created_at DESC")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var transferencias []Transferencia
+	for rows.Next() {
+		var t Transferencia
+		rows.Scan(&t.ID, &t.IDEmisor, &t.IDReceptor, &t.Valor, &t.CreatedAt)
+		transferencias = append(transferencias, t)
+	}
+
+	tmpl, _ := template.ParseFiles("templates/transferencias.html")
+	tmpl.Execute(w, transferencias)
 }

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transferencias</title>
+</head>
+<body>
+    <h1>Historial de Transferencias</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>ID Emisor</th>
+                <th>ID Receptor</th>
+                <th>Valor</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.IDEmisor}}</td>
+                <td>{{.IDReceptor}}</td>
+                <td>{{.Valor}}</td>
+                <td>{{.CreatedAt}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <br>
+    <a href="/">Volver al inicio</a>
+</body>
+</html>
