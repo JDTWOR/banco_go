@@ -33,7 +33,7 @@
                 <li class="list-group-item">
                     <div class="row align-items-center">
                         <div class="col">
-                            {{.ID}} - {{.Name}} ({{.Email}})
+                            {{.ID}} - {{.Name}} ({{.Email}}) - Saldo: ${{printf "%.2f" .Saldo}}
                         </div>
                         <div class="col-auto">
                             <form action="/edit" method="post" class="d-inline me-2">
