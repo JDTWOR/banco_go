@@ -44,6 +44,8 @@ func main() {
 	http.HandleFunc("/add", addUser)
 	http.HandleFunc("/edit", editUser)
 	http.HandleFunc("/delete", deleteUser)
+	http.HandleFunc("/transferencia", showTransferForm)
+	http.HandleFunc("/transfer", transferMoney)
 
 	fmt.Println("Servidor corriendo en http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
@@ -166,5 +168,37 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+// Muestra el formulario de transferencia
+func showTransferForm(w http.ResponseWriter, r *http.Request) {
+	log.Println("showTransferForm called")
+	tmpl, _ := template.ParseFiles("templates/transferencia.html")
+	tmpl.Execute(w, nil)
+}
+
+// Realiza la transferencia
+func transferMoney(w http.ResponseWriter, r *http.Request) {
+	log.Println("transferMoney called")
+	if r.Method == "POST" {
+		log.Println("Method is POST")
+		idEmisor := r.FormValue("id_emisor")
+		idReceptor := r.FormValue("id_receptor")
+		valor := r.FormValue("valor")
+		log.Printf("Form values: idEmisor=%s, idReceptor=%s, valor=%s", idEmisor, idReceptor, valor)
+
+		// Insertar la transferencia en la base de datos
+		_, err := db.Exec("INSERT INTO transferencias (id_emisor, id_receptor, valor) VALUES (?, ?, ?)", idEmisor, idReceptor, valor)
+		if err != nil {
+			log.Printf("Database error: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Println("Transfer inserted successfully")
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	} else {
+		log.Println("Method is not POST")
 	}
 }
